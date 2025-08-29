@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Health Insights Hub',
+  title: 'Insights Hub',
   description: 'A dashboard for doctors to view patient profiles, predictions, and decision support recommendations.',
 };
 

@@ -46,7 +46,7 @@ export default function PatientList({
         <div className="flex items-center gap-2">
           <Activity className="size-8 text-primary" />
           <h2 className="text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
-            Health Insights
+            Insights
           </h2>
         </div>
         <SidebarTrigger />
