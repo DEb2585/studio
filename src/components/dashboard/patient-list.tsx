@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   Activity,
+  PlusCircle,
   Search,
   User,
 } from "lucide-react";
@@ -12,12 +13,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   SidebarHeader,
   SidebarContent,
+  SidebarFooter,
   SidebarInput,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 interface PatientListProps {
   patients: Patient[];
@@ -81,6 +85,20 @@ export default function PatientList({
           )}
         </SidebarMenu>
       </SidebarContent>
+       <SidebarSeparator />
+        <SidebarFooter className="p-2">
+            <SidebarMenuItem>
+                <Link href="/register" legacyBehavior passHref>
+                    <SidebarMenuButton
+                        className="justify-start"
+                        tooltip="Register New Patient"
+                    >
+                        <PlusCircle />
+                        <span className="truncate">New Patient</span>
+                    </SidebarMenuButton>
+                </Link>
+            </SidebarMenuItem>
+        </SidebarFooter>
     </>
   );
 }
