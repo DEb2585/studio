@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import * as React from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import {
   Activity,
   PlusCircle,
@@ -30,6 +33,18 @@ import {
 import { explainPrediction } from '@/ai/flows/explain-prediction';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
 
 // --- Data ---
 export type Patient = {
@@ -526,12 +541,14 @@ interface PatientListProps {
   patients: Patient[];
   selectedPatientId: string | null;
   onSelectPatient: (id: string) => void;
+  onShowRegister: () => void;
 }
 
 function PatientList({
   patients,
   selectedPatientId,
   onSelectPatient,
+  onShowRegister
 }: PatientListProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
 
@@ -587,15 +604,14 @@ function PatientList({
        <SidebarSeparator />
         <SidebarFooter className="p-2">
             <SidebarMenuItem>
-                <Link href="/register" legacyBehavior passHref>
-                    <SidebarMenuButton
-                        className="justify-start"
-                        tooltip="Register New Patient"
-                    >
-                        <PlusCircle />
-                        <span className="truncate">New Patient</span>
-                    </SidebarMenuButton>
-                </Link>
+                <SidebarMenuButton
+                    onClick={onShowRegister}
+                    className="justify-start"
+                    tooltip="Register New Patient"
+                >
+                    <PlusCircle />
+                    <span className="truncate">New Patient</span>
+                </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarFooter>
     </>
@@ -603,11 +619,145 @@ function PatientList({
 }
 
 
+// register-patient-page.tsx
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: 'Name must be at least 2 characters.',
+  }),
+  age: z.coerce.number().min(0, {
+    message: 'Age must be a positive number.',
+  }),
+  isSmoker: z.enum(['yes', 'no'], {
+    required_error: 'You need to select an option.',
+  }),
+});
+
+function RegisterPatientPage({ onBack }: { onBack: () => void }) {
+  const { toast } = useToast();
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      age: 0,
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log(values);
+    toast({
+      title: 'Form Submitted',
+      description: 'Patient data has been logged to the console.',
+    });
+    form.reset();
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+       <div className="flex items-center justify-between">
+         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            Register New Patient
+          </h1>
+          <Button variant="outline" onClick={onBack}>Back to Dashboard</Button>
+       </div>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Patient Registration</CardTitle>
+          <CardDescription>Please fill out the form to register a new patient.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormDescription>This is the patient's full name.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="age"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Age</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="45" {...field} />
+                    </FormControl>
+                    <FormDescription>The patient's age in years.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isSmoker"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Is the patient a smoker?</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="yes" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Yes</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="no" />
+                          </FormControl>
+                          <FormLabel className="font-normal">No</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit">Register Patient</Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 // --- Main Page Component ---
 export default function Home() {
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(patients.length > 0 ? patients[0].id : null);
+  const [showRegister, setShowRegister] = useState(false);
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId) || null;
+
+  const handleSelectPatient = (id: string) => {
+    setSelectedPatientId(id);
+    setShowRegister(false);
+  }
+
+  const handleShowRegister = () => {
+    setSelectedPatientId(null);
+    setShowRegister(true);
+  }
+  
+  const handleBackToDashboard = () => {
+    setShowRegister(false);
+    if(patients.length > 0) {
+        setSelectedPatientId(patients[0].id);
+    }
+  }
 
   return (
     <SidebarProvider defaultOpen>
@@ -616,17 +766,20 @@ export default function Home() {
           <PatientList
             patients={patients}
             selectedPatientId={selectedPatientId}
-            onSelectPatient={setSelectedPatientId}
+            onSelectPatient={handleSelectPatient}
+            onShowRegister={handleShowRegister}
           />
         </Sidebar>
         <SidebarInset>
           <main className="flex-1 overflow-y-auto">
             <div className="p-4 md:p-8">
-              {selectedPatient ? (
+              {showRegister ? (
+                <RegisterPatientPage onBack={handleBackToDashboard} />
+              ) : selectedPatient ? (
                 <PatientDetails patient={selectedPatient} />
               ) : (
                 <div className="flex h-[80vh] items-center justify-center rounded-lg border-2 border-dashed">
-                  <p className="text-muted-foreground">Select a patient to view details</p>
+                  <p className="text-muted-foreground">Select a patient to view details or register a new one.</p>
                 </div>
               )}
             </div>
